@@ -25,13 +25,12 @@ def read_data(data_path:str='Dataset.csv')-> pd.DataFrame:
    
 df = read_data('Dataset.csv')
 item_tuples = [(row['StockCode'], row['Description']) for index, row in df.iterrows()]
-module_url = "https://tfhub.dev/google/universal-sentence-encoder/4" #@param ["https://tfhub.dev/google/universal-sentence-encoder/4", "https://tfhub.dev/google/universal-sentence-encoder-large/5"]
-model = hub.load(module_url)
-def embed(input):
-  return model(input)
 
 
 def get_similar_items(item_name:str,df:pd.DataFrame, item_tuples, model)-> List[str]:
+    def embed(input, model):
+      return model(input)
+
     test_item = item_name
     # want the longest description for the item from the df
     all_description = df[df['StockCode'] == test_item]['Description']
@@ -39,14 +38,14 @@ def get_similar_items(item_name:str,df:pd.DataFrame, item_tuples, model)-> List[
     longest_description = max(all_description, key=len)
     print(longest_description)
 
-    description_embedding = embed([longest_description])
+    description_embedding = embed([longest_description], model)
 
     # get the 10 most similar items from item_tuples using cosine similarity
     similar_items = []
     for item in item_tuples:
         if(item[0] == test_item):
             continue
-        item_embedding = embed([item[1]])
+        item_embedding = embed([item[1]], model)
         similarity = cosine_similarity(description_embedding, item_embedding)
         # if similairty is higher than all similarities in similar_items, add it to similar_items 
         if len(similar_items) < 10 and similarity > 0.4:
@@ -61,18 +60,26 @@ def get_similar_items(item_name:str,df:pd.DataFrame, item_tuples, model)-> List[
 
 @app.route('/get_similar_items', methods=['POST'])
 def get_similar_items_endpoint():
+
     data = request.get_json()
     item_name = data.get('item_name')
     
     if item_name is None:
         return jsonify({'error': 'Item name is missing'}), 400
     item_name = str(item_name)
+    print('got name', item_name)
+
+    module_url = "https://tfhub.dev/google/universal-sentence-encoder/4" #@param ["https://tfhub.dev/google/universal-sentence-encoder/4", "https://tfhub.dev/google/universal-sentence-encoder-large/5"]
+    model = hub.load(module_url)
+
     similar_items = get_similar_items(item_name, df, item_tuples, model)
-    
+    print(similar_items)
     result = [{'StockCode': item[0], 'Description': item[1], 'Similarity': item[2][0][0]} for item in similar_items]
     return jsonify({'similar_items': result})
 
-
 if __name__ == '__main__':
     app.run(debug=True)
+    print('starting server')
+    # module_url = "https://tfhub.dev/google/universal-sentence-encoder/4" #@param ["https://tfhub.dev/google/universal-sentence-encoder/4", "https://tfhub.dev/google/universal-sentence-encoder-large/5"]
+    # global model = hub.load(module_url)
 
