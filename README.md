@@ -15,6 +15,9 @@ sudo chmod +x script.sh
 # Activate the conda environment
 conda activate rmd
 
+# python script to download model weight of the second task
+python donwload_model.py
+
 # Run task_1.py
 python task_1.py
 
