@@ -69,12 +69,16 @@ def get_similar_items_endpoint():
     item_name = str(item_name)
     print('got name', item_name)
 
-    module_url = "https://tfhub.dev/google/universal-sentence-encoder/4" #@param ["https://tfhub.dev/google/universal-sentence-encoder/4", "https://tfhub.dev/google/universal-sentence-encoder-large/5"]
-    model = hub.load(module_url)
+    # module_url = "https://tfhub.dev/google/universal-sentence-encoder/4" #@param ["https://tfhub.dev/google/universal-sentence-encoder/4", "https://tfhub.dev/google/universal-sentence-encoder-large/5"]
+    # model = hub.load(module_url)
+    model = hub.load("./sentence_encoder")
+
 
     similar_items = get_similar_items(item_name, df, item_tuples, model)
     print(similar_items)
-    result = [{'StockCode': item[0], 'Description': item[1], 'Similarity': item[2][0][0]} for item in similar_items]
+    # result = [{'StockCode': item[0], 'Description': item[1], 'Similarity': item[2][0][0]} for item in similar_items]
+    result = [{'StockCode': item[0], 'Description': item[1], 'Similarity': float(item[2][0][0])} for item in similar_items]
+
     return jsonify({'similar_items': result})
 
 if __name__ == '__main__':
